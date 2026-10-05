@@ -4,3 +4,4 @@ importlib-resources
 pandas
 matplotlib
 numpy
+opencv-python
