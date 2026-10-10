@@ -1,0 +1,8 @@
+
+services:
+  servidor-web:
+    build: .
+    container_name: vision-artificial-web
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
