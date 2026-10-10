@@ -2,7 +2,6 @@
 # Pequeño proyecto de redes neuronales convolucionales para aprendizaje de perros y gatos.
 
 # %%
-%pip install -r requirements.txt #Instalar dependencias
 
 # %%
 #Importando librerias
@@ -36,7 +35,7 @@ for i, (imagen, etiqueta) in enumerate(datos['train']): #todos los datos
     imagen = imagen.numpy()
     imagen = cv2.cvtColor(imagen, cv2.COLOR_RGB2GRAY)           #Cambiar de color gris
     imagen = cv2.resize(imagen,(Tamano_img, Tamano_img))        #Redimensionar las imagenes a 100*100 px
-    imagen.reshape(100,100,1)                                   #Es una imagen de 100*100 * 1 canal de color
+    imagen = imagen.reshape(100,100,1)                                   #Es una imagen de 100*100 * 1 canal de color
     datos_entrenamiento.append([imagen, etiqueta])
 
 # %%
@@ -116,5 +115,4 @@ modeloCNN2.compile(optimizer = "adam",
 # %%
 TensorBoardDenso = TensorBoard(log_dir="logs/denso")
 modeloDenso.fit(X, Y, batch_size=32, validation_split=0.15, epochs=100, callbacks=[TensorBoardDenso])
-
-
+modeloDenso.export("modeloDenso") #Nesesario para java
