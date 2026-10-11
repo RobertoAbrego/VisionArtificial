@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VisionArtificial | Clasificador</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px 16px;
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: #f9fafb;
+            text-align: center;
+        }
+
+        main {
+            max-width: 650px;
+            margin: auto;
+            padding: 28px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 18px;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        p {
+            color: #d1d5db;
+        }
+
+        video, img {
+            display: block;
+            width: 100%;
+            max-height: 380px;
+            object-fit: contain;
+            background: #030712;
+            border-radius: 12px;
+            margin: 20px auto;
+        }
+
+        button, .file-button {
+            display: inline-block;
+            padding: 12px 16px;
+            margin: 5px;
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #4b5563;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        #resultado {
+            min-height: 24px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <h1>🐶 VisionArtificial 🐱</h1>
+    <p>Clasificador de perros y gatos mediante una red neuronal convolucional.</p>
+
+    <video id="camara" autoplay playsinline hidden></video>
+    <img id="vistaPrevia" alt="Imagen seleccionada" hidden>
+
+    <div>
+        <button id="activarCamara">📷 Activar cámara</button>
+
+        <label class="file-button" for="archivo">
+            🖼️ Subir imagen
+        </label>
+        <input id="archivo" type="file" accept="image/*">
+    </div>
+
+    <div>
+        <button id="capturar" disabled>Tomar foto</button>
+        <button id="detener" class="secondary" disabled>Apagar cámara</button>
+    </div>
+
+    <button id="clasificar" disabled>🔍 Clasificar imagen</button>
+
+    <p id="resultado" role="status">Seleccioná una imagen o activá la cámara.</p>
+</main>
+
+
+<script>
+    const camara = document.getElementById("camara");
+    const vistaPrevia = document.getElementById("vistaPrevia");
+    const archivo = document.getElementById("archivo");
+    const capturar = document.getElementById("capturar");
+    const detener = document.getElementById("detener");
+    const clasificar = document.getElementById("clasificar");
+    const resultado = document.getElementById("resultado");
+    const activarCamara = document.getElementById("activarCamara");
+
+    let flujoCamara = null;
+    let imagenSeleccionada = null;
+
+    activarCamara.addEventListener("click", async () => {
+        try {
+            flujoCamara = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" },
+                audio: false
+            });
+
+            camara.srcObject = flujoCamara;
+            camara.hidden = false;
+            vistaPrevia.hidden = true;
+
+            capturar.disabled = false;
+            detener.disabled = false;
+            clasificar.disabled = true;
+
+            resultado.textContent = "Cámara activa. Tomá una foto cuando quieras.";
+        } catch (error) {
+            resultado.textContent = "No se pudo acceder a la cámara. Revisá los permisos.";
+            console.error(error);
+        }
+    });
+
+    capturar.addEventListener("click", () => {
+        if (!camara.videoWidth) {
+            resultado.textContent = "Esperá a que la cámara esté lista.";
+            return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = camara.videoWidth;
+        canvas.height = camara.videoHeight;
+
+        canvas.getContext("2d").drawImage(camara, 0, 0);
+
+        canvas.toBlob(blob => {
+            if (!blob) {
+                resultado.textContent = "No se pudo capturar la imagen.";
+                return;
+            }
+
+            imagenSeleccionada = new File(
+                [blob],
+                "captura.png",
+                { type: "image/png" }
+            );
+
+            vistaPrevia.src = URL.createObjectURL(imagenSeleccionada);
+            vistaPrevia.hidden = false;
+            camara.hidden = true;
+            clasificar.disabled = false;
+
+            resultado.textContent = "Foto capturada. Presioná Clasificar imagen.";
+        }, "image/png");
+    });
+
+    detener.addEventListener("click", () => {
+        if (flujoCamara) {
+            flujoCamara.getTracks().forEach(track => track.stop());
+            flujoCamara = null;
+        }
+
+        camara.srcObject = null;
+        camara.hidden = true;
+        capturar.disabled = true;
+        detener.disabled = true;
+
+        resultado.textContent = "Cámara apagada.";
+    });
+
+    archivo.addEventListener("change", () => {
+        const imagen = archivo.files[0];
+
+        if (!imagen) return;
+
+        if (!imagen.type.startsWith("image/")) {
+            resultado.textContent = "Seleccioná un archivo de imagen válido.";
+            return;
+        }
+
+        imagenSeleccionada = imagen;
+        vistaPrevia.src = URL.createObjectURL(imagen);
+        vistaPrevia.hidden = false;
+        camara.hidden = true;
+        clasificar.disabled = false;
+
+        resultado.textContent = "Imagen cargada. Presioná Clasificar imagen.";
+    });
+
+    clasificar.addEventListener("click", async () => {
+        if (!imagenSeleccionada) {
+            resultado.textContent = "Primero seleccioná una imagen o tomá una foto.";
+            return;
+        }
+
+        clasificar.disabled = true;
+        resultado.textContent = "Clasificando imagen con el modelo...";
+
+        const datos = new FormData();
+        datos.append("imagen", imagenSeleccionada);
+
+        try {
+            const respuesta = await fetch("/api/clasificar", {
+                method: "POST",
+                body: datos
+            });
+
+            if (!respuesta.ok) {
+                const detalle = await respuesta.text();
+                throw new Error(`HTTP ${respuesta.status}: ${detalle}`);
+            }
+
+            const prediccion = await respuesta.json();
+
+            const porcentaje = (
+                prediccion.puntuacionPerro * 100
+            ).toFixed(2);
+
+            resultado.textContent =
+                `Resultado: ${prediccion.clase}. ` +
+                `Puntuación de perro: ${porcentaje}%.`;
+
+        } catch (error) {
+            resultado.textContent = "Error al clasificar: " + error.message;
+            console.error("Error de clasificación:", error);
+        } finally {
+            clasificar.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

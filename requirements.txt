@@ -5,3 +5,4 @@ pandas
 matplotlib
 numpy
 opencv-python
+tf2onnx

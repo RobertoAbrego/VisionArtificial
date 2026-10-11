@@ -1,0 +1,1 @@
+python -m tf2onnx.convert --saved-model modeloDenso --output modeloDenso.onnx --opset 15

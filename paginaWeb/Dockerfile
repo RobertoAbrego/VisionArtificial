@@ -14,6 +14,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
+COPY modelo/modeloDenso.onnx /app/modeloDenso.onnx
+
+ENV MODELO_RUTA=/app/modeloDenso.onnx
 
 EXPOSE 8080
 
